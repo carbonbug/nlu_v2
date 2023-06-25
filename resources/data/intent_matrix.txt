@@ -1,0 +1,28 @@
+привет * greeting 
+здравствуйте * greeting
+да * greeting 
+алло * greeting 
+
+
+чё * repeat_request
+че * repeat_request
+что * repeat_request
+а кого * repeat_request
+а * repeat_request
+
+ну * agreement
+да * agreement
+угу * agreement
+
+нет * refusal
+не * refusal
+не хочу * refusal 
+
+не знаю * unknown
+не скажу * unknown
+
+я думал * supposition
+наверно * supposition
+
+до свидания * farewell 
+пока * farewell

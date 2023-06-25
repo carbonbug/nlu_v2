@@ -5,6 +5,7 @@ class Reply:
         self.intent = intent
         self.is_bot = is_bot
         self.phrases = phrases
+        self.next_reply: Reply = None
 
 
 

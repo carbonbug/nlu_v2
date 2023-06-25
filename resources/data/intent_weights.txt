@@ -1,0 +1,7 @@
+greeting = 1
+repeat_request = 1
+agreement = 1
+refusal = 2
+unknown = 3
+supposition = 0.5
+farewell = 2
