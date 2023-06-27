@@ -20,13 +20,22 @@ class IntentHandler:
         self._intent_matrix_path = intent_matrix_path
         self._intent_weights_path = intent_weights_path
 
-        self._intent_matrix = None
+        self._intent_matrix, self._word_intent_pairs = self.get_intent_matrix()
+        #self._intent_matrix = None
         self._intent_weights = None
-        self._word_intent_pairs = None
+        #self._word_intent_pairs = None
+
+    @property
+    def intent_matrix(self):
+        return self._intent_matrix
+
+    @property
+    def word_intent_pairs(self):
+        return self._word_intent_pairs
 
     # @router.get("/get_intent_matrix")
     def get_intent_matrix(self):
-# TODO переделать считываение файла с распознаванием матриц
+        # TODO переделать считываение файла с распознаванием матриц
         if self._intent_matrix_path is None:
             nlu_exception = OwnResponseCodes.INTENT_MATRIX_FILE_PATH_IS_NONE
             raise NluException(message=nlu_exception["message"], code=nlu_exception["code"])
@@ -76,6 +85,14 @@ class IntentHandler:
     # @router.post("/parse_intent")
 
     # @router.post("/parse")
+
+    def parse_reply_intent(self, reply: Reply):
+        _reply = reply
+        _text = ""
+        for phrase in reply.phrases:
+            _text += phrase
+        return self.parse_intent(_text)
+
     def parse_intent(self, text: str):
         if (self._intent_matrix is None) or (self._word_intent_pairs is None):
             self._intent_matrix, self._word_intent_pairs = self.get_intent_matrix()
@@ -86,7 +103,7 @@ class IntentHandler:
         _intent_matrix = self._intent_matrix.copy()
 
         for intent_word in self._word_intent_pairs:
-            if f" {intent_word} " in f" {text} " :
+            if f" {intent_word} " in f" {text} ":
                 intent = self._word_intent_pairs[intent_word]
                 _intent_matrix[intent] += self._intent_weights[intent]
 
@@ -98,3 +115,9 @@ class IntentHandler:
             _intent = k[v.index(max(v))]
         return _intent
         # return JSONResponse(status_code=200, content={"intent": _intent})
+
+    @property
+    def intent_weights(self):
+        return self._intent_weights
+
+

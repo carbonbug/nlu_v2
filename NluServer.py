@@ -21,7 +21,7 @@ from handlers.NluException import NluException
 throttler: TokenThrottler = TokenThrottler(cost=1, storage=RuntimeStorage())
 throttler.add_bucket(identifier="user_id", bucket=TokenBucket(replenish_time=10, max_tokens=5))
 
-_path = os.path.abspath(os.getcwd())
+_path = os.path.dirname(__file__)
 _conversations_path = f"{_path}/dialogs"
 _intent_matrix_path = f"{_path}/resources/data/intent_matrix.txt"
 _intent_weights_path = f"{_path}/resources/data/intent_weights.txt"
@@ -33,15 +33,13 @@ app = FastAPI()
 app.include_router(handler_router)
 
 
-@app.post("/form_conversation_graph")
-def form_conversation_graph(conversations_arr: List[List[dict]]):
+@app.post("/form_conversation_tree")
+def form_conversation_tree(conversations_arr: List[List[dict]]):
     '''
-
     :param conversations_arr: is a array of converstaions
     :return:
 
     json like conversation tree where branches are formed from different intents
-
 
     1. convert each raw conversation into message flor conversation
     2. start each message based conversataion with bot message
@@ -49,14 +47,13 @@ def form_conversation_graph(conversations_arr: List[List[dict]]):
     4. parse intent of each reply
     5. form intent based three
 
-
     '''
 
     try:
 
+        _json_tree = _conversation_handler.form_intent_branched_conversation_three(conversations_arr)
 
-
-        return JSONResponse(status_code=200, content={"message": None})
+        return JSONResponse(status_code=200, content={"message": _json_tree})
     except NluException as nlu_ex:
         return JSONResponse(status_code=nlu_ex.code, content={"message": nlu_ex.message})
 

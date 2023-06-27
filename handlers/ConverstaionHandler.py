@@ -19,7 +19,6 @@ class ConversationHandler:
     def __init__(self, intent_handler: IntentHandler):
         self.intent_handler = intent_handler
 
-
     # into messages funcs
 
     def form_conversation_into_message_flow(self, dict_arr_conversation: List[dict]) -> List[Message]:
@@ -50,10 +49,12 @@ class ConversationHandler:
                 i = n
                 break
 
-        if i == len(messages_conversation):  # TODO handle all exceptions as a exception stack trace
+        _ln = len(messages_conversation)
+
+        if i == _ln:  # TODO handle all exceptions as a exception stack trace
             NluException.raise_nlu_exception(OwnResponseCodes.ONLY_BOT_IS_IN_CONVERSATION)
 
-        if i == 0:
+        if i - _ln == 0:
             NluException.raise_nlu_exception(OwnResponseCodes.ONLY_HUMAN_IS_IN_CONVERSATION)
 
         return messages_conversation[i:]
@@ -65,32 +66,27 @@ class ConversationHandler:
             _.append(bot_started_conversation)
         return _
 
-    # conversation based on replies
+    # <reply based conversation array>
 
     def form_reply_based_conversation(self, messages_conversation: List[Message]) -> Reply:
+        _first_message = messages_conversation[0]
+        _first_reply: Reply = Reply(is_bot=_first_message.is_bot, phrases=[_first_message.text])
+        _current_reply: Reply = _first_reply
 
-        conversation_reply_flow: list[Reply] = []
-        _conversation = self.form_conversation_into_message_flow(conversation)
-        _bot_begins_conversation = self.begin_conversation_with_bot(_conversation)
-
-        _first_message = conversation[0]
-        _first_reply = Reply(
-            is_bot=_first_message.is_bot,
-            phrases=[_first_message.text]
-        )
-        conversation_reply_flow.append(_first_reply)
-
-        for _reply in conversation[1:]:
-            _text = f' {_reply.text} '.lower()
-            if bool(_reply.is_bot) == conversation_reply_flow[-1].is_bot:
-                conversation_reply_flow[-1].phrases.append(_text)
+        for message in messages_conversation:
+            _text = f" {message.text} ".lower()
+            if message.is_bot == _current_reply.is_bot:
+                _current_reply.phrases.append(_text)
             else:
-                r = Reply(is_bot=_reply.is_bot, phrases=[_text])
-                conversation_reply_flow.append(r)
+                _new_reply = Reply(is_bot=message.is_bot, phrases=[message.text])
+                _current_reply.next_reply = _new_reply
+                _current_reply = _new_reply
+
+        return _first_reply
 
     def form_reply_based_conversation_array(self,
                                             bot_started_messages_conversation_array: List[List[Message]]) \
-        -> List[Reply]:
+            -> List[Reply]:
 
         _: List[Reply] = []
 
@@ -100,50 +96,69 @@ class ConversationHandler:
 
         return _
 
+    # </reply based conversation array>
 
+    # <parse intent reply>
 
+    def parse_each_reply_intent_in_conversation_array(self, reply_based_conversation_array: List[Reply]) -> List[Reply]:
+        for reply in reply_based_conversation_array:
+            self.parse_reply_intent_in_deep(reply)
 
+        return reply_based_conversation_array
 
+    def parse_reply_intent_in_deep(self, reply: Reply):
 
+        if (self.intent_handler.intent_matrix is None) or (self.intent_handler.word_intent_pairs is None):
+            self.intent_handler._intent_matrix, self.intent_handler._word_intent_pairs = self.intent_handler.get_intent_matrix()
 
+        if self.intent_handler.intent_weights is None:
+            self.intent_handler._intent_weights = self.intent_handler.get_intent_weights()
 
+        _next_reply = reply
+        reply.intent = self.intent_handler.parse_reply_intent(reply)
 
+        while _next_reply.next_reply is not None:
+            _next_reply = _next_reply.next_reply
+            _next_reply.intent = self.intent_handler.parse_reply_intent(_next_reply)
 
+        # return _init_reply
 
+    # </parse intent reply>
 
+    # <conversation tree builder>
+    def form_conversation_tee(self, reply_conversation_array):
+        # 1. Find collection of replies with unique intention and place them in the array
+        # 2. For each reply with unique intent create a branch in current json with it's intent
+        # 3. If there is one more reply in linked list take next reply and for to #1
 
+        _init_reply = reply_conversation_array[0]
+        _jsn = {
+            "is_bot": _init_reply.is_bot,
+            "intent": _init_reply.intent,
+            "phrases": [],
+            "replies": []
+        }  # json.dumps({})
 
+        for reply in reply_conversation_array:
+            _jsn["phrases"].extend(reply.phrases)
 
+        for reply in reply_conversation_array:
+            self.conversation_tree_add_intent_branch(_jsn["replies"], reply)
 
+        return [_jsn]
 
+    def conversation_tree_add_intent_branch(self, _jsn_replies_arr, reply: Reply):
+        # function that will be called recursively
+        _reply = {
+            "is_bot": reply.is_bot,
+            "intent": reply.intent,
+            "phrases": reply.phrases,
+            "replies": []
+        }
+        _jsn_replies_arr.append(_reply)
 
-    def form_conversation_array_into_reply_flow(self, conversation_array: List[List[Message]]):
-        array_of_conversations = []
-        for conversation in conversation_array:  # TODO things with rasing exceptions
-            if len(conversation) > 0:
-                continue
-            _conversation_as_reply_flow = self.form_conversation_into_reply_flow(conversation)
-            array_of_conversations.append(_conversation_as_reply_flow)
-
-        return array_of_conversations
-
-
-    def parse_intent_in_each_reply_in_conversation(self, conversation_as_reply_flow):
-        for conversation in conversation_as_reply_flow:
-            for reply in conversation:
-                if not reply.is_bot:
-                    self.intent_handler.parse_intent(reply)
-                else:
-                    reply.intent = "default"
-
-        return conversation_as_reply_flow
-
-    # def form_conversation_array_from_intent_replies(self, conversation_array):
-    #
-    #     conversation_as_messages_flow = self.form_conversation_into_message_flow(conversation_array)
-    #     conversation_as_reply_flow = self.form_conversation_array_into_reply_flow(conversation_as_messages_flow)
-    #     conversation_as_intent_replies_flow = self.parse_intent_in_each_reply_in_conversation(conversation_as_reply_flow)
-    #     return conversation_as_intent_replies_flow
+        if reply.next_reply is not None:
+            self.conversation_tree_add_intent_branch(_reply["replies"], reply.next_reply)
 
     def form_intent_branched_conversation_three(self, conversations_arr):
         """
@@ -161,4 +176,14 @@ class ConversationHandler:
 
         #  3. convert conversation into reply based structure
 
-        reply_based_conversation_array = self.form_reply_based_conversation_array(bot_started_messages_conversation_array)
+        reply_conversation_array = self.form_reply_based_conversation_array(
+            bot_started_messages_conversation_array)
+
+        #  4. parse intent of each reply
+
+        self.parse_each_reply_intent_in_conversation_array(reply_conversation_array)
+
+        #  5. form intent based three
+
+        return self.form_conversation_tee(reply_conversation_array)
+# </conversation tree builder>
