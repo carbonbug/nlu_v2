@@ -1,3 +1,4 @@
+from typing import List
 class Reply:
     def __init__(self, phrases=None, is_bot: bool = True, intent: str = "default"):
         if phrases is None:
@@ -5,7 +6,7 @@ class Reply:
         self.intent = intent
         self.is_bot = is_bot
         self.phrases = phrases
-        self.next_reply: Reply = None
+        self.next_replies: List[Reply] = []
 
 
 

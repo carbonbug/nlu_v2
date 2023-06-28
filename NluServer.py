@@ -23,8 +23,8 @@ throttler.add_bucket(identifier="user_id", bucket=TokenBucket(replenish_time=10,
 
 _path = os.path.dirname(__file__)
 _conversations_path = f"{_path}/dialogs"
-_intent_matrix_path = f"{_path}/resources/data/intent_matrix.txt"
-_intent_weights_path = f"{_path}/resources/data/intent_weights.txt"
+_intent_matrix_path = f"{_path}/addition/intent_info/intent_matrix.txt"
+_intent_weights_path = f"{_path}/addition/intent_info/intent_weights.txt"
 
 _intent_handler = IntentHandler(_intent_matrix_path, _intent_weights_path)
 _conversation_handler = ConversationHandler(_intent_handler)
@@ -58,13 +58,14 @@ def form_conversation_tree(conversations_arr: List[List[dict]]):
         return JSONResponse(status_code=nlu_ex.code, content={"message": nlu_ex.message})
 
     except Exception as ex:
+        print(ex)
         JSONResponse(status_code=500, content={"message": "Internal unexpected exception. Ask a administrator"})
 
 
 @app.get("/parse")
-def parse_phrase_intent(text: str):
+def parse_phrase_intent(q: str):
     try:
-        r = _intent_handler.parse_intent(text)
+        r = _intent_handler.parse_intent(q)
         return JSONResponse(status_code=200, content={"message": r})
     except NluException as nlu_ex:
         return JSONResponse(status_code=nlu_ex.code, content={"message": nlu_ex.message})
@@ -74,22 +75,6 @@ def parse_phrase_intent(text: str):
 
 
 if __name__ == "__main__":
-    # start the application
+
     uvicorn.run(app)
-    # read all files manually
-    # put files into api and get conversation three
-    # save conversation three into files
 
-# CONVERATION FILES
-
-# load conversations 
-# convert into dialog
-
-
-# INTENTS
-
-# load intent matrix 
-# load intent weights 
-
-
-# parse intent

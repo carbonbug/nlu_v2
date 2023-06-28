@@ -18,11 +18,13 @@
 не * refusal
 не хочу * refusal 
 
-не знаю * unknown
-не скажу * unknown
+не знаю * person_doesnt_know
+не скажу * person_doesnt_know
 
 я думал * supposition
 наверно * supposition
 
 до свидания * farewell 
 пока * farewell
+
+не звоните * farewell

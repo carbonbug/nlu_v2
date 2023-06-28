@@ -19,11 +19,8 @@ class IntentHandler:
     def __init__(self, intent_matrix_path=None, intent_weights_path=None):
         self._intent_matrix_path = intent_matrix_path
         self._intent_weights_path = intent_weights_path
-
         self._intent_matrix, self._word_intent_pairs = self.get_intent_matrix()
-        #self._intent_matrix = None
         self._intent_weights = None
-        #self._word_intent_pairs = None
 
     @property
     def intent_matrix(self):
@@ -86,12 +83,11 @@ class IntentHandler:
 
     # @router.post("/parse")
 
-    def parse_reply_intent(self, reply: Reply):
+    def parse_each_reply_intent(self, reply: Reply):
         _reply = reply
-        _text = ""
-        for phrase in reply.phrases:
-            _text += phrase
-        return self.parse_intent(_text)
+        if reply.is_bot:
+            return "default"
+        return self.parse_intent(reply.phrase)
 
     def parse_intent(self, text: str):
         if (self._intent_matrix is None) or (self._word_intent_pairs is None):

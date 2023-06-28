@@ -15,3 +15,10 @@ def load_all_conversations(path_to_conversations):
         file_d.close()
 
     return conversations
+
+
+def dict_to_json(dct, json_filename):
+    r = json.dumps(dct)
+    loaded_r = json.loads(r)
+    with open(f"tests_results/{json_filename}.json", "w", encoding='utf-8') as file:
+        json.dump(loaded_r, file, ensure_ascii=False, indent=4)
